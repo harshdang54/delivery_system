@@ -5,7 +5,7 @@ import json
 import os
 from twilio.rest import Client
 
-from scripts.water_reminder import water_blueprint
+# from scripts.water_reminder import water_blueprint
 import psycopg2
 from flask_cors import CORS
 
@@ -15,7 +15,7 @@ from config import config
 app = Flask(__name__)
 CORS(app)
 
-app.register_blueprint(water_blueprint)
+# app.register_blueprint(water_blueprint)
 
 @app.route("/")
 def Hello_World():

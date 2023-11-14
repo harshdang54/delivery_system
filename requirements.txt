@@ -5,6 +5,4 @@ pandas
 jwt
 psycopg2
 flask_cors
-config
-win10toast
-schedule 
+config 
