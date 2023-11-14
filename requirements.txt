@@ -1,6 +1,6 @@
 flask
 jwt
-twilio.rest
+twilio
 pandas
 jwt
 psycopg2
