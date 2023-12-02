@@ -1,9 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 import pandas as pd
 import jwt
 import json
 import os
 from twilio.rest import Client
+import random
+import math
 
 # from scripts.water_reminder import water_blueprint
 import psycopg2
@@ -13,6 +15,7 @@ from config import config
 
 
 app = Flask(__name__)
+app.secret_key="otp"
 CORS(app)
 
 # app.register_blueprint(water_blueprint)
@@ -27,7 +30,7 @@ def HomePage():
 
 def sendMessage(msg, nmber):
     account_sid = 'AC3b5fd7fdc5321a29c165be0f7eca502f'
-    auth_token = '5d22fe1e3b2897c69e126720c11f8cfd'
+    auth_token = 'd8bec5f6d1e3fffccabe944831b8c9f5'
     client = Client(account_sid, auth_token)
 
     message = client.messages.create(
@@ -92,35 +95,72 @@ def connect():
             else :
                 return error   
         return items
+    
 
+def genrateRandom6DigitCode():
+    ## storing strings in a list
+    digits = [i for i in range(0, 10)] 
+    ## initializing a string
+    random_str = "" 
+    ## we can generate any lenght of string we want
+    for i in range(6):
+    ## generating a random index
+    ## if we multiply with 10 it will generate a number between 0 and 10 not including 10
+    ## multiply the random.random() with length of your base list or str
+        index = math.floor(random.random() * 10) 
+        random_str += str(digits[index])
+
+    return random_str
+
+@app.route("/otp_validate", methods=['POST'])
+def otpValidate():
+    otpC = request.get_json().get('code')  
+    if 'response' in session:
+        code = session['response']
+        phone = session['phone']
+        print('code', len(code),len(otpC), code,otpC)
+        session.pop('response', None)
+        if (code == otpC):
+            return userVerified(phone)
+        else:
+            return jsonify({"res":'error else'})
+    return jsonify({"res":'error out'})   
+       
+def userVerified(phone): 
+    # connect to the PostgreSQL server
+    print('Connecting to the PostgreSQL database...')
+    params = config()
+    conn = psycopg2.connect(**params)
+    # create a cursor
+    cur = conn.cursor()
+    try : 
+        cur.execute(f"select * from users where phone='{phone}'")
+        excuteResult = cur.fetchall()
+        print('try len',  excuteResult, len(excuteResult))
+        conn.close()    
+        if len(excuteResult) > 0:
+            return jsonify({"new_user":False, "data":excuteResult}) 
+        else:
+            return jsonify({"new_user":True, "data":excuteResult})
+        # if new user true It means user already registered and we can send them to listing page else we need to insert the use detail into users table
+    except (Exception, psycopg2.DatabaseError) as error:
+        print('custom error', type(error))
+        err = []
+        err.append({"error":error})
+        print('err',err)
+        return jsonify({"error":str(error)})
+    
 @app.route("/otp_verify", methods=['POST', 'GET'])
 def dataSubmit():  
     print('post api', request.get_json()) 
     phone = request.get_json().get('phone')  
-    # if sendMessage("This is Harsh",phone):
-    if True:    
-        # connect to the PostgreSQL server
-        print('Connecting to the PostgreSQL database...')
-        params = config()
-        conn = psycopg2.connect(**params)
-        # create a cursor
-        cur = conn.cursor()
-        try : 
-            cur.execute(f"select * from users where phone='{phone}'")
-            excuteResult = cur.fetchall()
-            print('try len',  excuteResult, len(excuteResult))
-            conn.close()    
-            if len(excuteResult) > 0:
-                return jsonify({"new_user":False, "data":excuteResult}) 
-            else:
-                return jsonify({"new_user":True, "data":excuteResult})
-            # if new user true It means user already registered and we can send them to listing page else we need to insert the use detail into users table
-        except (Exception, psycopg2.DatabaseError) as error:
-            print('custom error', type(error))
-            err = []
-            err.append({"error":error})
-            print('err',err)
-            return jsonify({"error":'DB Error'})
+    otp =  genrateRandom6DigitCode()
+    print('otp code is ', otp)
+    session['response']= str(otp) 
+    session['phone']= phone  
+    return jsonify({'res':'data send'})
+    # if sendMessage(f'your 6 digit code is {otp}',phone): 
+             
 
         # print('fetch len',  len(cur.fetchall())==0)
         # if len(cur.fetchall()):
@@ -168,7 +208,8 @@ def registeration():
     print('post api', request.get_json())  
     name = request.get_json().get('name') 
     email = request.get_json().get('email')  
-    phone = request.get_json().get('phone')   
+    phone = session['phone'] 
+    session.pop('phone', None)  
     # if sendMessage("This is Harsh",phone):
     if (name!="" and email!="" and phone!=""):    
         # connect to the PostgreSQL server
@@ -184,8 +225,8 @@ def registeration():
             return jsonify({"message":"user has beeen registered"})  
             # if new user true It means user already registered and we can send them to listing page else we need to insert the use detail into users table
         except (Exception, psycopg2.DatabaseError) as error:
-            print('custom error', type(error)) 
-            return jsonify({"error":'DB Error'})
+            print('custom error', error) 
+            return jsonify({"error":str(error)})
         
     else:
         return jsonify({'error':'Please fill all the required fields.'})
