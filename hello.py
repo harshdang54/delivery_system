@@ -220,9 +220,11 @@ def registeration():
         cur = conn.cursor()
         try : 
             cur.execute("INSERT INTO users (name, email, phone) VALUES (%s, %s, %s)", (name,email, phone))
+            cur.execute(f"select * from users where phone='{phone}'")
+            excuteResult = cur.fetchall()
             conn.commit() 
             conn.close()     
-            return jsonify({"message":"user has beeen registered"})  
+            return jsonify({"message":"user has beeen registered", "data":excuteResult})  
             # if new user true It means user already registered and we can send them to listing page else we need to insert the use detail into users table
         except (Exception, psycopg2.DatabaseError) as error:
             print('custom error', error) 
