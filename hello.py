@@ -30,7 +30,7 @@ def HomePage():
 
 def sendMessage(msg, nmber):
     account_sid = 'AC3b5fd7fdc5321a29c165be0f7eca502f'
-    auth_token = 'd8bec5f6d1e3fffccabe944831b8c9f5'
+    auth_token = '57d0e77b23568162d29762c08380fb35'
     client = Client(account_sid, auth_token)
 
     message = client.messages.create(
