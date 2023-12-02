@@ -123,8 +123,8 @@ def otpValidate():
         if (code == otpC):
             return userVerified(phone)
         else:
-            return jsonify({"res":'error else'})
-    return jsonify({"res":'error out'})   
+            return jsonify({"res":'otp code is not matching'})
+    return jsonify({"res":'error in validation'})   
        
 def userVerified(phone): 
     # connect to the PostgreSQL server
@@ -150,7 +150,7 @@ def userVerified(phone):
         print('err',err)
         return jsonify({"error":str(error)})
     
-@app.route("/otp_verify", methods=['POST', 'GET'])
+@app.route("/otp_send", methods=['POST', 'GET'])
 def dataSubmit():  
     print('post api', request.get_json()) 
     phone = request.get_json().get('phone')  
@@ -158,9 +158,9 @@ def dataSubmit():
     print('otp code is ', otp)
     session['response']= str(otp) 
     session['phone']= phone  
-    return jsonify({'res':'data send'})
-    # if sendMessage(f'your 6 digit code is {otp}',phone): 
+    if sendMessage(f'your 6 digit code is {otp}',phone): 
              
+        return jsonify({'res':'data send'})
 
         # print('fetch len',  len(cur.fetchall())==0)
         # if len(cur.fetchall()):
